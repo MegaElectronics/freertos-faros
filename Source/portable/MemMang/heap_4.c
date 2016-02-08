@@ -77,6 +77,9 @@
  */
 #include <stdlib.h>
 
+#define heapBYTE_ALIGNMENT			4
+#define heapBYTE_ALIGNMENT_MASK		( 0x0003 )
+
 /* Defining MPU_WRAPPERS_INCLUDED_FROM_API_FILE prevents task.h from redefining
 all the API functions to use the MPU wrappers.  That should only be done when
 task.h is included from an application file. */
@@ -130,7 +133,7 @@ static void prvHeapInit( void );
 
 /* The size of the structure placed at the beginning of each allocated memory
 block must by correctly byte aligned. */
-static const size_t xHeapStructSize	= ( sizeof( BlockLink_t ) + ( ( size_t ) ( portBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
+static const size_t xHeapStructSize	= ( sizeof( BlockLink_t ) + ( ( size_t ) ( heapBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) heapBYTE_ALIGNMENT_MASK );
 
 /* Create a couple of list links to mark the start and end of the list. */
 static BlockLink_t xStart, *pxEnd = NULL;
@@ -180,11 +183,11 @@ void *pvReturn = NULL;
 
 				/* Ensure that blocks are always aligned to the required number
 				of bytes. */
-				if( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) != 0x00 )
+				if( ( xWantedSize & heapBYTE_ALIGNMENT_MASK ) != 0x00 )
 				{
 					/* Byte alignment required. */
-					xWantedSize += ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) );
-					configASSERT( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) == 0 );
+					xWantedSize += ( heapBYTE_ALIGNMENT - ( xWantedSize & heapBYTE_ALIGNMENT_MASK ) );
+					configASSERT( ( xWantedSize & heapBYTE_ALIGNMENT_MASK ) == 0 );
 				}
 				else
 				{
@@ -229,7 +232,7 @@ void *pvReturn = NULL;
 						cast is used to prevent byte alignment warnings from the
 						compiler. */
 						pxNewBlockLink = ( void * ) ( ( ( uint8_t * ) pxBlock ) + xWantedSize );
-						configASSERT( ( ( ( size_t ) pxNewBlockLink ) & portBYTE_ALIGNMENT_MASK ) == 0 );
+						configASSERT( ( ( ( size_t ) pxNewBlockLink ) & heapBYTE_ALIGNMENT_MASK ) == 0 );
 
 						/* Calculate the sizes of two blocks split from the
 						single block. */
@@ -293,7 +296,7 @@ void *pvReturn = NULL;
 	}
 	#endif
 
-	configASSERT( ( ( ( uint32_t ) pvReturn ) & portBYTE_ALIGNMENT_MASK ) == 0 );
+	configASSERT( ( ( ( uint32_t ) pvReturn ) & heapBYTE_ALIGNMENT_MASK ) == 0 );
 	return pvReturn;
 }
 /*-----------------------------------------------------------*/
@@ -374,10 +377,10 @@ size_t xTotalHeapSize = configTOTAL_HEAP_SIZE;
 	/* Ensure the heap starts on a correctly aligned boundary. */
 	uxAddress = ( size_t ) ucHeap;
 
-	if( ( uxAddress & portBYTE_ALIGNMENT_MASK ) != 0 )
+	if( ( uxAddress & heapBYTE_ALIGNMENT_MASK ) != 0 )
 	{
-		uxAddress += ( portBYTE_ALIGNMENT - 1 );
-		uxAddress &= ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
+		uxAddress += ( heapBYTE_ALIGNMENT - 1 );
+		uxAddress &= ~( ( size_t ) heapBYTE_ALIGNMENT_MASK );
 		xTotalHeapSize -= uxAddress - ( size_t ) ucHeap;
 	}
 
@@ -392,7 +395,7 @@ size_t xTotalHeapSize = configTOTAL_HEAP_SIZE;
 	at the end of the heap space. */
 	uxAddress = ( ( size_t ) pucAlignedHeap ) + xTotalHeapSize;
 	uxAddress -= xHeapStructSize;
-	uxAddress &= ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
+	uxAddress &= ~( ( size_t ) heapBYTE_ALIGNMENT_MASK );
 	pxEnd = ( void * ) uxAddress;
 	pxEnd->xBlockSize = 0;
 	pxEnd->pxNextFreeBlock = NULL;
