@@ -1,5 +1,5 @@
 /*
-    FreeRTOS V8.2.2 - Copyright (C) 2015 Real Time Engineers Ltd.
+    FreeRTOS V9.0.0rc1 - Copyright (C) 2016 Real Time Engineers Ltd.
     All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
@@ -8,7 +8,7 @@
 
     FreeRTOS is free software; you can redistribute it and/or modify it under
     the terms of the GNU General Public License (version 2) as published by the
-    Free Software Foundation >>!AND MODIFIED BY!<< the FreeRTOS exception.
+    Free Software Foundation >>>> AND MODIFIED BY <<<< the FreeRTOS exception.
 
     ***************************************************************************
     >>!   NOTE: The modification to the GPL is included to allow you to     !<<
@@ -207,8 +207,6 @@ QueueHandle_t MPU_xQueueCreateMutex( void );
 QueueHandle_t MPU_xQueueCreateCountingSemaphore( UBaseType_t uxCountValue, UBaseType_t uxInitialCount );
 BaseType_t MPU_xQueueTakeMutexRecursive( QueueHandle_t xMutex, TickType_t xBlockTime );
 BaseType_t MPU_xQueueGiveMutexRecursive( QueueHandle_t xMutex );
-BaseType_t MPU_xQueueAltGenericSend( QueueHandle_t pxQueue, const void * const pvItemToQueue, TickType_t xTicksToWait, BaseType_t xCopyPosition );
-BaseType_t MPU_xQueueAltGenericReceive( QueueHandle_t pxQueue, void * const pvBuffer, TickType_t xTicksToWait, BaseType_t xJustPeeking );
 void MPU_vQueueAddToRegistry( QueueHandle_t xQueue, char *pcName );
 void MPU_vQueueDelete( QueueHandle_t xQueue );
 void *MPU_pvPortMalloc( size_t xSize );
@@ -334,7 +332,7 @@ static void prvRestoreContextOfFirstTask( void )
 		"	ldr r14, =0xfffffffd			\n" /* Load exec return code. */
 		"	bx r14							\n"
 		"									\n"
-		"	.align 2						\n"
+		"	.align 4						\n"
 		"pxCurrentTCBConst2: .word pxCurrentTCB	\n"
 	);
 }
@@ -440,7 +438,7 @@ void xPortPendSVHandler( void )
 		"	msr psp, r0							\n"
 		"	bx r14								\n"
 		"										\n"
-		"	.align 2							\n"
+		"	.align 4							\n"
 		"pxCurrentTCBConst: .word pxCurrentTCB	\n"
 		::"i"(configMAX_SYSCALL_INTERRUPT_PRIORITY)
 	);
@@ -911,7 +909,7 @@ BaseType_t xRunningPrivileged = prvRaisePrivilege();
 
 		uxReturn = uxTaskGetSystemState( pxTaskStatusArray, uxArraySize, pulTotalRunTime );
 		portRESET_PRIVILEGE( xRunningPrivileged );
-		return xReturn;
+		return uxReturn;
 	}
 #endif
 /*-----------------------------------------------------------*/
@@ -1130,32 +1128,6 @@ void * xReturn;
 	BaseType_t xRunningPrivileged = prvRaisePrivilege();
 
 		xReturn = xQueueRemoveFromSet( xQueueOrSemaphore, xQueueSet );
-		portRESET_PRIVILEGE( xRunningPrivileged );
-		return xReturn;
-	}
-#endif
-/*-----------------------------------------------------------*/
-
-#if configUSE_ALTERNATIVE_API == 1
-	BaseType_t MPU_xQueueAltGenericSend( QueueHandle_t pxQueue, const void * const pvItemToQueue, TickType_t xTicksToWait, BaseType_t xCopyPosition )
-	{
-   	BaseType_t xReturn;
-	BaseType_t xRunningPrivileged = prvRaisePrivilege();
-
-		xReturn = 	BaseType_t xQueueAltGenericSend( pxQueue, pvItemToQueue, xTicksToWait, xCopyPosition );
-		portRESET_PRIVILEGE( xRunningPrivileged );
-		return xReturn;
-	}
-#endif
-/*-----------------------------------------------------------*/
-
-#if configUSE_ALTERNATIVE_API == 1
-	BaseType_t MPU_xQueueAltGenericReceive( QueueHandle_t pxQueue, void * const pvBuffer, TickType_t xTicksToWait, BaseType_t xJustPeeking )
-	{
-    BaseType_t xReturn;
-	BaseType_t xRunningPrivileged = prvRaisePrivilege();
-
-		xReturn = xQueueAltGenericReceive( pxQueue, pvBuffer, xTicksToWait, xJustPeeking );
 		portRESET_PRIVILEGE( xRunningPrivileged );
 		return xReturn;
 	}

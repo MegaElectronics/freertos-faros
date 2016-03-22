@@ -1,5 +1,5 @@
 /*
-    FreeRTOS V8.2.2 - Copyright (C) 2015 Real Time Engineers Ltd.
+    FreeRTOS V9.0.0rc1 - Copyright (C) 2016 Real Time Engineers Ltd.
     All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
@@ -8,7 +8,7 @@
 
     FreeRTOS is free software; you can redistribute it and/or modify it under
     the terms of the GNU General Public License (version 2) as published by the
-    Free Software Foundation >>!AND MODIFIED BY!<< the FreeRTOS exception.
+    Free Software Foundation >>>> AND MODIFIED BY <<<< the FreeRTOS exception.
 
     ***************************************************************************
     >>!   NOTE: The modification to the GPL is included to allow you to     !<<
@@ -619,14 +619,14 @@ volatile uint32_t ulErrorStatus = 0;
 	{
 	BaseType_t xReturn;
 
-		if( prvCheckValidityOfVectorNumber( ulVectorNumber ) != pdFAIL )
+		xReturn = prvCheckValidityOfVectorNumber( ulVectorNumber );
+
+		if( xReturn != pdFAIL )
 		{
 			/* Save the handler passed in by the application in the vector number
 			passed in.  The addresses are then called from the central interrupt
 			handler. */
 			xInterruptHandlerTable[ ulVectorNumber ] = pxHandler;
-
-			xReturn = pdPASS;
 		}
 
 		return xReturn;
@@ -639,7 +639,9 @@ BaseType_t xPortInstallInterruptHandler( ISR_Handler_t pxHandler, uint32_t ulVec
 {
 BaseType_t xReturn;
 
-	if( prvCheckValidityOfVectorNumber( ulVectorNumber ) != pdFAIL )
+	xReturn = prvCheckValidityOfVectorNumber( ulVectorNumber );
+	
+	if( xReturn != pdFAIL )
 	{
 		taskENTER_CRITICAL();
 		{
@@ -647,8 +649,6 @@ BaseType_t xReturn;
 			prvSetInterruptGate( ( uint8_t ) ulVectorNumber, ( ISR_Handler_t ) pxHandler, portIDT_FLAGS );
 		}
 		taskEXIT_CRITICAL();
-
-		xReturn = pdPASS;
 	}
 
 	return xReturn;

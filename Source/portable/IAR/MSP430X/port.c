@@ -1,5 +1,5 @@
 /*
-    FreeRTOS V8.2.2 - Copyright (C) 2015 Real Time Engineers Ltd.
+    FreeRTOS V9.0.0rc1 - Copyright (C) 2016 Real Time Engineers Ltd.
     All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
@@ -8,7 +8,7 @@
 
     FreeRTOS is free software; you can redistribute it and/or modify it under
     the terms of the GNU General Public License (version 2) as published by the
-    Free Software Foundation >>!AND MODIFIED BY!<< the FreeRTOS exception.
+    Free Software Foundation >>>> AND MODIFIED BY <<<< the FreeRTOS exception.
 
     ***************************************************************************
     >>!   NOTE: The modification to the GPL is included to allow you to     !<<
@@ -70,7 +70,6 @@
 /* Scheduler includes. */
 #include "FreeRTOS.h"
 #include "task.h"
-#include "int_vector.h"
 
 /*-----------------------------------------------------------
  * Implementation of functions defined in portable.h for the MSP430X port.
@@ -120,7 +119,7 @@ uint32_t *pulTopOfStack;
 	/*
 		Place a few bytes of known values on the bottom of the stack.
 		This is just useful for debugging and can be included if required.
-
+	
 		*pxTopOfStack = ( StackType_t ) 0x1111;
 		pxTopOfStack--;
 		*pxTopOfStack = ( StackType_t ) 0x2222;
@@ -144,12 +143,12 @@ uint32_t *pulTopOfStack;
 		pulTopOfStack = ( uint32_t * ) pxTopOfStack;
 	}
 	*pulTopOfStack = ( uint32_t ) pxCode;
-
+	
 	pusTopOfStack = ( uint16_t * ) pulTopOfStack;
 	pusTopOfStack--;
 	*pusTopOfStack = portFLAGS_INT_ENABLED;
 	pusTopOfStack -= ( sizeof( StackType_t ) / 2 );
-
+	
 	/* From here on the size of stacked items depends on the memory model. */
 	pxTopOfStack = ( StackType_t * ) pusTopOfStack;
 
@@ -170,7 +169,7 @@ uint32_t *pulTopOfStack;
 		*pxTopOfStack = ( StackType_t ) 0x9999;
 		pxTopOfStack--;
 		*pxTopOfStack = ( StackType_t ) 0x8888;
-		pxTopOfStack--;
+		pxTopOfStack--;	
 		*pxTopOfStack = ( StackType_t ) 0x5555;
 		pxTopOfStack--;
 		*pxTopOfStack = ( StackType_t ) 0x6666;
@@ -189,7 +188,7 @@ uint32_t *pulTopOfStack;
 	/* A variable is used to keep track of the critical section nesting.
 	This variable has to be stored as part of the task context and is
 	initially set to zero. */
-	*pxTopOfStack = ( StackType_t ) portNO_CRITICAL_SECTION_NESTING;
+	*pxTopOfStack = ( StackType_t ) portNO_CRITICAL_SECTION_NESTING;	
 
 	/* Return a pointer to the top of the stack we have generated so this can
 	be stored in the task control block for the task. */
@@ -213,8 +212,7 @@ void vPortSetupTimerInterrupt( void )
 }
 /*-----------------------------------------------------------*/
 
-//#pragma vector=configTICK_VECTOR
-SET_INTERRUPT_VECTOR(configTICK_VECTOR)
+#pragma vector=configTICK_VECTOR
 __interrupt __raw void vTickISREntry( void )
 {
 extern void vPortTickISR( void );
@@ -223,4 +221,4 @@ extern void vPortTickISR( void );
 	vPortTickISR();
 }
 
-
+	

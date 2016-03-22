@@ -1,5 +1,5 @@
 /*
-    FreeRTOS V8.2.2 - Copyright (C) 2015 Real Time Engineers Ltd.
+    FreeRTOS V9.0.0rc1 - Copyright (C) 2016 Real Time Engineers Ltd.
     All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
@@ -8,7 +8,7 @@
 
     FreeRTOS is free software; you can redistribute it and/or modify it under
     the terms of the GNU General Public License (version 2) as published by the
-    Free Software Foundation >>!AND MODIFIED BY!<< the FreeRTOS exception.
+    Free Software Foundation >>>> AND MODIFIED BY <<<< the FreeRTOS exception.
 
     ***************************************************************************
     >>!   NOTE: The modification to the GPL is included to allow you to     !<<
@@ -92,7 +92,7 @@
 #define portINITIAL_XPSR			( 0x01000000 )
 
 /* Let the user override the pre-loading of the initial LR with the address of
-prvTaskExitError() in case is messes up unwinding of the stack in the
+prvTaskExitError() in case it messes up unwinding of the stack in the
 debugger. */
 #ifdef configTASK_RETURN_ADDRESS
 	#define portTASK_RETURN_ADDRESS	configTASK_RETURN_ADDRESS
@@ -183,12 +183,13 @@ void vPortStartFirstTask( void )
 	"	msr psp, r0					\n" /* This is now the new top of stack to use in the task. */
 	"	movs r0, #2					\n" /* Switch to the psp stack. */
 	"	msr CONTROL, r0				\n"
+	"	isb							\n"
 	"	pop {r0-r5}					\n" /* Pop the registers that are saved automatically. */
 	"	mov lr, r5					\n" /* lr is now in r5. */
 	"	cpsie i						\n" /* The first task has its context and interrupts can be enabled. */
 	"	pop {pc}					\n" /* Finally, pop the PC to jump to the user defined task code. */
 	"								\n"
-	"	.align 2					\n"
+	"	.align 4					\n"
 	"pxCurrentTCBConst2: .word pxCurrentTCB	  "
 				  );
 }
@@ -331,7 +332,7 @@ void xPortPendSVHandler( void )
 	"										\n"
 	"	bx r3								\n"
 	"										\n"
-	"	.align 2							\n"
+	"	.align 4							\n"
 	"pxCurrentTCBConst: .word pxCurrentTCB	  "
 	);
 }
