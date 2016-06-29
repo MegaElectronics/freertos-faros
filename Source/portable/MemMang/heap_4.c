@@ -1,5 +1,5 @@
 /*
-    FreeRTOS V9.0.0rc1 - Copyright (C) 2016 Real Time Engineers Ltd.
+    FreeRTOS V9.0.0 - Copyright (C) 2016 Real Time Engineers Ltd.
     All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
@@ -90,11 +90,18 @@ task.h is included from an application file. */
 
 #undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 
+#if( configSUPPORT_DYNAMIC_ALLOCATION == 0 )
+	#error This file must not be used if configSUPPORT_DYNAMIC_ALLOCATION is 0
+#endif
+
 /* Block sizes must not get too small. */
 #define heapMINIMUM_BLOCK_SIZE	( ( size_t ) ( xHeapStructSize << 1 ) )
 
 /* Assumes 8bit bytes! */
 #define heapBITS_PER_BYTE		( ( size_t ) 8 )
+
+#define startMARKER 			( uint32_t )0xDEADBEEF
+#define endMARKER 				( uint32_t )0xBAADF00D
 
 /* Allocate the memory for the heap. */
 #if( configAPPLICATION_ALLOCATED_HEAP == 1 )
@@ -133,7 +140,9 @@ static void prvHeapInit( void );
 
 /* The size of the structure placed at the beginning of each allocated memory
 block must by correctly byte aligned. */
-static const size_t xHeapStructSize	= ( sizeof( BlockLink_t ) + ( ( size_t ) ( heapBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) heapBYTE_ALIGNMENT_MASK );
+static const size_t xGuardWordsSize = 4;
+
+static const size_t xHeapStructSize	= (sizeof( BlockLink_t ) + ( ( size_t ) ( heapBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) heapBYTE_ALIGNMENT_MASK );
 
 /* Create a couple of list links to mark the start and end of the list. */
 static BlockLink_t xStart, *pxEnd = NULL;
@@ -179,7 +188,7 @@ void *pvReturn = NULL;
 			structure in addition to the requested amount of bytes. */
 			if( xWantedSize > 0 )
 			{
-				xWantedSize += xHeapStructSize;
+				xWantedSize += xHeapStructSize + (2 * xGuardWordsSize);
 
 				/* Ensure that blocks are always aligned to the required number
 				of bytes. */
@@ -217,7 +226,10 @@ void *pvReturn = NULL;
 				{
 					/* Return the memory space pointed to - jumping over the
 					BlockLink_t structure at its start. */
-					pvReturn = ( void * ) ( ( ( uint8_t * ) pxPreviousBlock->pxNextFreeBlock ) + xHeapStructSize );
+					pvReturn = ( void * ) ( ( ( uint8_t * ) pxPreviousBlock->pxNextFreeBlock ) + xHeapStructSize  +  xGuardWordsSize);
+
+					*( uint32_t * )( ( ( uint8_t * ) pvReturn) - xGuardWordsSize ) = startMARKER;
+					*( uint32_t * )( ( ( uint8_t * ) pvReturn) +  xWantedSize - ( xHeapStructSize +  2 * xGuardWordsSize ) ) = endMARKER;
 
 					/* This block is being returned for use so must be taken out
 					of the list of free blocks. */
@@ -296,7 +308,7 @@ void *pvReturn = NULL;
 	}
 	#endif
 
-	configASSERT( ( ( ( uint32_t ) pvReturn ) & heapBYTE_ALIGNMENT_MASK ) == 0 );
+	configASSERT( ( ( ( size_t ) pvReturn ) & ( size_t ) portBYTE_ALIGNMENT_MASK ) == 0 );
 	return pvReturn;
 }
 /*-----------------------------------------------------------*/
@@ -310,7 +322,7 @@ BlockLink_t *pxLink;
 	{
 		/* The memory being freed will have an BlockLink_t structure immediately
 		before it. */
-		puc -= xHeapStructSize;
+		puc -= (xHeapStructSize + xGuardWordsSize);
 
 		/* This casting is to keep the compiler from issuing warnings. */
 		pxLink = ( void * ) puc;
@@ -318,6 +330,9 @@ BlockLink_t *pxLink;
 		/* Check the block is actually allocated. */
 		configASSERT( ( pxLink->xBlockSize & xBlockAllocatedBit ) != 0 );
 		configASSERT( pxLink->pxNextFreeBlock == NULL );
+
+		configASSERT(* ( ( uint32_t * )&puc[ xHeapStructSize ] ) == startMARKER );
+		configASSERT(* ( ( uint32_t * )&puc[ ( pxLink->xBlockSize & ~xBlockAllocatedBit ) - xGuardWordsSize  ] ) == endMARKER );
 
 		if( ( pxLink->xBlockSize & xBlockAllocatedBit ) != 0 )
 		{
